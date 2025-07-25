@@ -1,0 +1,7 @@
+torch
+numpy
+pandas
+rasterio
+scikit-image
+PyWavelets
+faulthandler 
