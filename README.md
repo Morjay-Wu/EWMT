@@ -1,141 +1,119 @@
-# EWMT: An Enhanced Wavelet and Multi-Head Transformer for Spatiotemporal Fusion
+# EWMT: Frequency-Decoupled Two-Input Spatiotemporal Fusion
 
-This repository contains the official PyTorch implementation of the paper: **"An Enhanced Wavelet and Multi-Head Transformer for Spatiotemporal Fusion of Remote Sensing Imagery"**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Framework: PyTorch](https://img.shields.io/badge/Framework-PyTorch-orange.svg)](https://pytorch.org/)
 
-EWMT is a lightweight, two-input spatiotemporal fusion network that optimizes computational speed and memory footprint while enhancing fusion quality. It leverages a convolution-based wavelet transform and a multi-head attention mechanism to achieve state-of-the-art performance, especially in resource-constrained environments.
+This repository contains the official PyTorch implementation of the paper:
 
-![Model Framework](fig/framework.png) 
+**EWMT: Frequency-Decoupled Two-Input Spatiotemporal Fusion with Wavelet Front-End and Reference-Guided Local Attention**
 
+*Accepted/Submitted to IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing (JSTARS)*
 
----
-
-## 🚀 Features
-
-- **High Efficiency**: Designed as a two-input model, EWMT significantly reduces data requirements and computational overhead compared to traditional three- or five-input methods.
-- **Advanced Fusion Quality**: Outperforms other two-input models and is competitive with some three-input models, particularly on complex datasets.
-- **Lightweight Architecture**: With only ~0.48M parameters, it is suitable for edge computing scenarios like on-board satellite processing.
-- **Hybrid Attention Mechanism**: Integrates channel attention and multi-head spatial attention to capture both spectral fidelity and fine-grained spatial details.
-- **Optimized Wavelet Transform**: Reformulates the wavelet transform as an efficient convolution operation, enabling seamless GPU acceleration and end-to-end training.
+**Authors:** Tongquan Wu, Weiquan Kong, Yuanxu Wang, Lu Bai, and Yurong Qian* (Xinjiang University)
 
 ---
 
-## 🔧 Installation
+## 📖 Abstract
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Morjay-Wu/EWMT.git
-    cd EWMT
-    ```
+Two-input spatiotemporal fusion often suffers from a trade-off between recovering high-frequency details and preserving spectral consistency. We propose **EWMT**, a frequency-decoupled network that addresses this issue through:
 
-2.  **Create a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-    ```
+1.  **Wavelet Front-End (`WTConv2d`):** A learnable two-level wavelet decomposition module that separates high-frequency textures from low-frequency structures.
+2.  **Decoupled Supervision:** A two-level Haar wavelet loss combined with MS-SSIM.
+3.  **SWAR Refinement:** A Reference-Guided Sliding-Window Attention module for efficient detail recovery.
 
-3.  **Install the dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+Experiments on CIA, LGC, and SW datasets show that EWMT achieves competitive performance against state-of-the-art three-input models while using significantly fewer parameters and lower latency.
 
----
+## 🏗️ Architecture
 
-## 📁 Data Preparation
+*(Please upload your framework figure to a `fig/` folder and name it `framework.png`)*
+![Framework](fig/framework.png)
 
-The model expects the dataset to be organized in a specific structure. Based on the CIA dataset example, your data directory should look like this:
+## 🛠️ Requirements
 
-```
-data/
-└── cia/
-    ├── train/
-    │   ├── L-Mdata1/
-    │   │   ├── 00_L.tif  (Fine-resolution reference image at t_k)
-    │   │   └── 00_M.tif  (Coarse-resolution reference image at t_k)
-    │   │   ├── 01_L.tif  (Fine-resolution target image at t_0 - Ground Truth)
-    │   │   └── 01_M.tif  (Coarse-resolution target image at t_0)
-    │   ├── L-Mdata2/
-    │   │   └── ...
-    │   └── ...
-    └── test/
-        ├── L-Mdata13/
-        │   └── ...
-        └── ...
-```
+- Python 3.8+
+- PyTorch 1.12+
+- CUDA 11.3+
+- PyWavelets (`pywt`)
 
--   Each subfolder (e.g., `L-Mdata1`) represents one data sample pair.
--   The file names must follow the `time-prefix_sensor-prefix.tif` convention.
-    -   `00_`: Reference date (t_k)
-    -   `01_`: Prediction date (t_0)
-    -   `L`: Fine-resolution sensor (e.g., Landsat)
-    -   `M`: Coarse-resolution sensor (e.g., MODIS)
-
-After organizing your data, update the paths in the `run.py` script accordingly.
-
----
-
-## ⚡️ Quick Start
-
-### Training
-
-To train the EWMT model on your dataset, you can run the `run.py` script. Adjust the arguments as needed.
+Install dependencies:
 
 ```bash
-python run.py \
-    --train_dir ./data/cia/train \
-    --val_dir ./data/cia/test \
-    --save_dir ./results/cia_experiment \
-    --epochs 50 \
-    --batch_size 8 \
-    --lr 1e-3 \
-    --cuda
+pip install -r requirements.txt
 ```
 
--   `--train_dir`: Path to the training dataset.
--   `--val_dir`: Path to the validation dataset.
--   `--save_dir`: Directory to save checkpoints and logs.
--   Other parameters can be found in `run.py`.
+## 📂 Dataset Preparation
 
-Training progress and checkpoints will be saved in the directory specified by `--save_dir`. The best model checkpoint will be saved as `best.pth`.
+We evaluated our model on three public datasets:
+- **CIA (Coleambally Irrigation Area)**
+- **LGC (Lower Gwydir Catchment)**
+- **SW (Shawan Region)**
 
-### Testing
+The directory structure should be organized as follows:
 
-After training, you can use the trained model to generate fused images for the test set.
+```
+dataset/
+  ├── CIA/
+  │   ├── train/
+  │   │   ├── MODIS_t1/
+  │   │   ├── Landsat_t1/
+  │   │   └── ...
+  │   └── test/
+  └── ...
+```
+
+## 🚀 Usage
+
+### 1. Quick Start (Model Test)
+
+To verify the model architecture and computational cost (FLOPs/Params), run:
 
 ```bash
-python run.py \
-    --test_dir ./data/cia/test \
-    --save_dir ./results/cia_experiment \
-    --epochs 0 \
-    --cuda
+python model_wtq10.py
 ```
-By setting `--epochs 0`, the script will skip the training phase, load the `best.pth` model from the `--save_dir`, and run inference on the test set. The fused images will be saved in the `results/cia_experiment/test` directory.
 
-### Evaluation
+### 2. Training
 
-To evaluate the performance of the fused images, use the `evaluate.py` script.
-
+*(Example command)*
 ```bash
-python evaluate.py
+python train.py --dataset CIA --epochs 100 --batch_size 8 --lr 1e-4
 ```
-Make sure to update the `test_folder` path inside the `evaluate.py` script to point to your directory containing the prediction and ground truth images. The script will calculate metrics like RMSE, PSNR, SSIM, SAM, and ERGAS, and save the results to a CSV file.
 
----
+### 3. Inference / Testing
 
-##  citation
+*(Example command)*
+```bash
+python test.py --weights checkpoints/best_model.pth --dataset CIA
+```
 
-If you find this work useful for your research, please consider citing our paper:
+## 📊 Results
+
+Performance comparison on the **LGC Dataset**:
+
+| Model | RMSE ↓ | SSIM ↑ | SAM ↓ | ERGAS ↓ |
+|-------|--------|--------|-------|---------|
+| ECPW | 0.0184 | 0.9100 | 0.0634| 0.9655 |
+| Swin-STFM | 0.0155 | 0.9453 | 0.0633| 0.7622 |
+| **EWMT (Ours)**| **0.0134** | **0.9450** | **0.0426**| **0.6609** |
+
+*See the paper for full results on CIA and SW datasets.*
+
+## 🔗 Citation
+
+If you find this work useful for your research, please cite:
 
 ```bibtex
-@article{wu2025ewmt,
-  title={An Enhanced Wavelet and Multi-Head Transformer for Spatiotemporal Fusion of Remote Sensing Imagery},
-  author={Wu, Tongquan and Kong, Weiquan and Bai, Lu},
-  journal={Journal of Remote Sensing Applications},
-  year={2025},
-  publisher={MDPI}
+@article{ewmt2024,
+  title={EWMT: Frequency-Decoupled Two-Input Spatiotemporal Fusion with Wavelet Front-End and Reference-Guided Local Attention},
+  author={Wu, Tongquan and Kong, Weiquan and Wang, Yuanxu and Bai, Lu and Qian, Yurong},
+  journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
+  year={2024},
+  note={Under Review}
 }
 ```
 
----
+## 📧 Contact
 
-## Acknowledgements
-The SSIM/MS-SSIM implementation is adapted from [pytorch-msssim](https://github.com/jorge-pessoa/pytorch-msssim). 
+If you have any questions, please contact:
+- **Tongquan Wu**: `107552103417@stu.xju.edu.cn`
+- **Yurong Qian**: `qyr@xju.edu.cn`
+
