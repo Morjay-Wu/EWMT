@@ -97,19 +97,7 @@ Performance comparison on the **LGC Dataset**:
 
 *See the paper for full results on CIA and SW datasets.*
 
-## 🔗 Citation
 
-If you find this work useful for your research, please cite:
-
-```bibtex
-@article{ewmt2024,
-  title={EWMT: Frequency-Decoupled Two-Input Spatiotemporal Fusion with Wavelet Front-End and Reference-Guided Local Attention},
-  author={Wu, Tongquan and Kong, Weiquan and Wang, Yuanxu and Bai, Lu and Qian, Yurong},
-  journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
-  year={2024},
-  note={Under Review}
-}
-```
 
 ## 📧 Contact
 
