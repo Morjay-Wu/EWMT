@@ -1,0 +1,8 @@
+main.tex
+__pycache__/
+*.pyc
+.DS_Store
+checkpoints/
+out/
+.vscode/
+.idea/
