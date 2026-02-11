@@ -1,56 +1,86 @@
-# EWMT: Wavelet-based Spatiotemporal Fusion
+# EWMT: Enhanced Wavelet Multi-head Transformer for Frequency-Decoupled Two-Input Spatiotemporal Fusion
 
-This repository contains the implementation of **EWMT**, a deep learning model for spatiotemporal fusion of remote sensing images. The model integrates SwinIR-style residual blocks with wavelet transforms to effectively fuse high-temporal-resolution (e.g., MODIS) and high-spatial-resolution (e.g., Landsat) images.
+This repository contains the official implementation of **EWMT**, a deep learning model for **two-input spatiotemporal fusion** of remote sensing images. The model addresses the trade-off between spatial and temporal resolution by integrating **frequency decoupling** into both the network architecture and the optimization objective.
 
-## Project Structure
+## 📖 Abstract
 
-- **`model_EWMT.py`**: Core model definition (`FusionNet_2`), including `RFEncoder` (SwinResidualRFBlock) and Wavelet Transform modules.
-- **`train.py`**: Training script tailored for the CIA dataset.
-- **`evaluate.py`**: Evaluation script providing metrics such as RMSE, PSNR, SSIM, SAM, and ERGAS.
-- **`wt_conv.py` & `wavelet.py`**: Utilities for Wavelet Transform operations (Haar Wavelet).
-- **`ssim.py`**: Implementation of SSIM/MS-SSIM for loss calculation.
-- **`utils.py`**: General helper functions.
+High spatiotemporal resolution remote sensing imagery is essential for monitoring dynamic Earth surface processes. However, practical **two-input approaches**—relying solely on a prior reference and a current low-resolution observation—often struggle to balance the recovery of high-frequency details with the preservation of spectral consistency.
 
-## Requirements
+**EWMT** mitigates this issue by identifying **frequency coupling** as the primary bottleneck. The proposed method features:
 
-The code requires a Python environment with PyTorch and common remote sensing/image processing libraries:
+* **End-to-End Frequency Decoupling:** A learnable two-level wavelet front-end performs subband filtering.
+* **SWAR Refinement:** A reference-guided local sliding-window attention module refines the preliminary fusion result by conditioning on the reference image.
+* **Decoupled Supervision:** A two-level Haar wavelet loss separately constrains low- and high-frequency subbands.
 
-- Python 3.x
-- PyTorch (CUDA recommended)
-- Rasterio
-- NumPy
-- Pandas
-- Scikit-image
-- PyWavelets (`pywt`)
-- Tqdm
+Experimental results on CIA, LGC, and SW datasets demonstrate that EWMT significantly outperforms state-of-the-art two-input baselines and achieves performance competitive with complex three-input models, making it ideal for resource-constrained deployment.
 
-## Usage
+## 🏗️ Architecture
+
+### Overall Framework
+
+The model consists of a two-stage pipeline: **Preliminary Fusion** and **SWAR Refinement**.
+![Overall Framework](fig/framework.png)
+
+### Key Modules
+
+#### 1. Learnable Wavelet Front-End
+
+A two-level wavelet decomposition separates features into frequency subbands for processed encoding.
+![Wavelet Transform](fig/wavelet.png)
+
+#### 2. SWAR (Swin-based Window Attention Refinement)
+
+A reference-guided module that refines details using window-based self-attention.
+![SWAR Module](fig/swar.png)
+
+## 📂 Project Structure
+
+* **`model_EWMT.py`**: Implementation of the **FusionNet_2** architecture, including `RFEncoder` (SwinResidualRFBlock) and Wavelet Transform modules.
+* **`run.py`**: The **main entry point** for training and testing the model. Handles argument parsing and experiment setup.
+* **`experiment.py`**: Contains the `Experiment` class, managing the training loop, validation, and testing procedures.
+* **`evaluate.py`**: Script for calculating quantitative metrics (RMSE, SSIM, SAM, ERGAS, etc.) on the test results.
+* **`utils.py`**, **`ssim.py`**, **`wavelet.py`**, **`wt_conv.py`**: Utility functions and helper modules for loss calculation and wavelet operations.
+* **`data_cia.py`**: (Expected) Dataset loader for the CIA dataset format.
+
+## 🚀 Usage
+
+### Requirements
+
+* Python 3.x
+* PyTorch (CUDA recommended)
+* Rasterio
+* NumPy
+* Pandas
+* Scikit-image
 
 ### Training
 
-Use `train.py` to train the model.
+To train the model, use `run.py`. You can configure hyperparameters via command-line arguments.
 
 ```bash
-python train.py --data_dir /path/to/dataset --out_dir /path/to/output
+python run.py --train_dir /path/to/train --val_dir /path/to/val --save_dir ./out --epochs 50 --batch_size 8 --lr 0.001
 ```
 
 **Common Arguments:**
-- `--data_dir`: Root directory of the dataset.
-- `--out_dir`: Directory to save checkpoints and logs.
-- `--epochs`: Number of training epochs (default: 100).
-- `--batch_size`: Batch size (default: 8).
-- `--lr`: Learning rate (default: 1e-4).
+
+* `--train_dir`: Path to training data.
+* `--val_dir`: Path to validation data.
+* `--save_dir`: Directory to save checkpoints and logs.
+* `--epochs`: Number of training epochs (default: 50).
+* `--batch_size`: Batch size (default: 8).
+* `--lr`: Learning rate (default: 1e-3).
+* `--cuda`: Enable CUDA (default: True).
 
 ### Evaluation
 
-Use `evaluate.py` to calculate quantitative metrics on test results.
+After generating predictions, use `evaluate.py` to compute metrics.
 
-**Note:** Please check and modify the `test_folder` location in `evaluate.py` before running.
+**Note:** Ensure you update the `test_folder` path in `evaluate.py` to point to your output directory before running.
 
 ```bash
 python evaluate.py
 ```
 
-## Note on Missing Dependencies
+## 📊 Results & Contributions
 
-The current file list does not include `data_cia.py` or `dwt_def.py`, which are imported by `train.py` and `model_EWMT.py`. Please ensure these files are present in your environment or directory for the code to execute correctly.
+EWMT achieves a superior trade-off between performance and efficiency, reducing parameter count and latency while maintaining reconstruction quality competitive with three-input models. It is particularly effective for scenarios where future reference images are unavailable (cloud cover or real-time monitoring).
